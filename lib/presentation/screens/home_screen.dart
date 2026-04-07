@@ -49,6 +49,20 @@ class HomeScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 20),
                     _SessionTile(
+                      label: 'Sumber Data',
+                      value: provider.sessionSourceLabel,
+                      icon: provider.restoredFromLocalStorage
+                          ? Icons.storage_rounded
+                          : Icons.cloud_done_rounded,
+                    ),
+                    _SessionTile(
+                      label: 'Status Offline Sederhana',
+                      value: provider.restoredFromLocalStorage
+                          ? 'Session dipulihkan dari local storage'
+                          : 'Session baru disimpan ke cache lokal',
+                      icon: Icons.offline_bolt_rounded,
+                    ),
+                    _SessionTile(
                       label: 'Username',
                       value: session.username,
                       icon: Icons.person_rounded,

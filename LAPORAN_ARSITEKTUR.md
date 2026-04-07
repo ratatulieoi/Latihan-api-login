@@ -1,135 +1,104 @@
-# Laporan Singkat Arsitektur Aplikasi
+# Laporan Singkat Implementasi Modul 6
 
 ## Judul
-Form Login Flutter Menggunakan Token dari API dengan Arsitektur Provider, Repository, dan Service
+Implementasi Local Storage, Caching Sederhana, dan Offline Mode Dasar pada Aplikasi Login Flutter
 
 ## Ringkasan
-Aplikasi ini dibuat untuk memenuhi tugas **membuat form login menggunakan token dari API**. Aplikasi menggunakan Flutter dan menerapkan pemisahan tanggung jawab agar kode lebih rapi, mudah dipahami, dan mudah dikembangkan. Arsitektur yang digunakan adalah **provider + repository + service**.
+Project ini merupakan kelanjutan dari tugas login API pada pertemuan sebelumnya. Pada Modul 6, aplikasi yang sama dilanjutkan dengan penyimpanan session ke local storage menggunakan `shared_preferences`.
 
-Aplikasi melakukan login ke API `https://dummyjson.com/auth/login`, mengambil token dari response, lalu menyimpan session secara lokal agar user tetap dalam keadaan login sampai melakukan logout.
+Implementasi dibuat sederhana. Fokusnya adalah menyimpan hasil login secara lokal, memulihkan session saat aplikasi dibuka kembali, dan menampilkan indikator sumber data apakah berasal dari API atau dari local storage.
 
 ---
 
-## Penjelasan Arsitektur
+## Fitur Modul 6 yang Sudah Sesuai
+
+- Menyimpan session login ke local storage
+- Membaca session yang tersimpan saat aplikasi dibuka kembali
+- Menghapus session dari local storage saat logout
+- Menampilkan sumber data session pada UI
+- Menerapkan offline mode dasar karena aplikasi masih bisa memulihkan status login tanpa request ulang saat dibuka kembali
+
+---
+
+## Penjelasan Struktur
 
 ### 1. Provider
-Provider bertugas mengatur **state** atau kondisi aplikasi yang berhubungan dengan tampilan.
+`AuthProvider` mengatur state utama aplikasi.
 
-Pada project ini, provider yang digunakan adalah:
-- `AuthProvider`
-
-Tugas utama `AuthProvider`:
-- Menyimpan status loading
-- Menyimpan data session user yang sedang login
-- Menyimpan pesan error ketika login gagal
-- Menjalankan proses login melalui repository
-- Menjalankan proses logout
-- Mengatur apakah user sudah login atau belum
-
-Dengan adanya provider, widget tidak perlu langsung mengelola logika login yang rumit. UI cukup membaca state dari provider menggunakan `context.watch()` atau memanggil aksi menggunakan `context.read()`.
+Tugas yang sekarang ditangani provider:
+- menyimpan session aktif
+- menyimpan status loading
+- menyimpan pesan error
+- melakukan inisialisasi session dari local storage
+- menentukan label sumber data session
 
 **File terkait:**
 - `lib/presentation/providers/auth_provider.dart`
 
----
-
 ### 2. Repository
-Repository bertugas menjadi **penghubung antara provider dengan sumber data**.
+`AuthRepository` menjadi penghubung antara service API dan penyimpanan lokal.
 
-Pada project ini, repository yang digunakan adalah:
-- `AuthRepository`
-- `AuthRepositoryImpl`
-
-Tugas utama repository:
-- Menerima permintaan login dari provider
-- Memanggil service untuk menghubungi API
-- Menyimpan hasil session ke local storage
-- Mengambil session yang sudah tersimpan saat aplikasi dibuka kembali
-- Menghapus session saat logout
-
-Repository membuat provider tidak perlu tahu detail bagaimana API dipanggil atau bagaimana data disimpan. Dengan begitu, struktur kode menjadi lebih bersih dan mudah diuji.
+Tugas repository:
+- melakukan login ke API
+- menyimpan session hasil login ke storage
+- mengambil session yang tersimpan
+- menghapus session saat logout
 
 **File terkait:**
 - `lib/data/repositories/auth_repository.dart`
 
----
+### 3. Storage
+`SharedPrefsSessionStorage` menangani local storage berbasis `shared_preferences`.
 
-### 3. Service
-Service bertugas menangani **komunikasi langsung dengan API**.
+Tugas storage:
+- menyimpan session dalam bentuk JSON string
+- membaca session yang sudah tersimpan
+- menghapus session lokal
+- membersihkan data rusak jika format session tidak valid
 
-Pada project ini, service yang digunakan adalah:
-- `AuthService`
-- `DummyJsonAuthService`
+**File terkait:**
+- `lib/data/storage/session_storage.dart`
 
-Tugas utama service:
-- Mengirim request HTTP `POST` ke endpoint login
-- Mengirim data `username` dan `password` dalam format JSON
-- Membaca response dari server
-- Mengubah response menjadi model `AuthSession`
-- Menangani error dari server atau masalah koneksi
-
-Service dibuat terpisah agar detail request API tidak bercampur dengan logika tampilan maupun state management.
+### 4. Service
+`DummyJsonAuthService` tetap dipakai untuk mengambil data login dari API.
 
 **File terkait:**
 - `lib/data/services/auth_service.dart`
 
 ---
 
-## Alur Login Aplikasi
+## Alur Kerja Modul 6
 
-Berikut alur kerja login pada aplikasi:
-
-1. User mengisi username dan password pada halaman login.
-2. Tombol login memanggil fungsi login di `AuthProvider`.
-3. `AuthProvider` memvalidasi input dan mengubah state menjadi loading.
-4. `AuthProvider` memanggil `AuthRepository`.
-5. `AuthRepository` memanggil `AuthService` untuk mengirim request ke API.
-6. API mengembalikan token login.
-7. `AuthService` mengubah response menjadi model `AuthSession`.
-8. `AuthRepository` menyimpan session ke local storage.
-9. `AuthProvider` memperbarui state menjadi authenticated.
-10. UI menampilkan halaman session aktif beserta token yang diterima.
+1. User login menggunakan akun dari API DummyJSON.
+2. Jika login berhasil, data session disimpan ke `shared_preferences`.
+3. Saat aplikasi dibuka ulang, `AuthProvider.init()` mencoba membaca session lama.
+4. Jika session ditemukan, user tetap masuk tanpa login ulang.
+5. UI halaman utama menampilkan apakah session berasal dari API atau local storage.
+6. Saat logout, data session dihapus dari penyimpanan lokal.
 
 ---
 
-## Penyimpanan Session
+## Bentuk Caching dan Offline Mode
 
-Aplikasi menggunakan `shared_preferences` untuk menyimpan session secara lokal. Data yang disimpan meliputi:
-- access token
-- refresh token
-- username
-- informasi user lain jika tersedia
+Caching pada project ini dibuat sederhana, yaitu cache untuk data session login. Jadi cache belum berupa daftar post atau data API kompleks.
 
-Saat aplikasi dibuka kembali, provider akan memeriksa apakah session masih tersimpan. Jika ada, user langsung masuk ke halaman session aktif tanpa perlu login ulang.
-
-**File terkait:**
-- `lib/data/storage/session_storage.dart`
+Offline mode juga masih dasar. Maksudnya, saat aplikasi dibuka kembali, status login tetap bisa dipulihkan dari data lokal yang sudah tersimpan. Ini cukup untuk menunjukkan konsep local storage dan offline behavior sederhana sesuai kebutuhan tugas.
 
 ---
 
-## Keuntungan Menggunakan Arsitektur Ini
+## Hasil Implementasi
 
-Beberapa keuntungan dari penggunaan provider + repository + service:
-
-1. **Kode lebih rapi**
-   - Setiap layer memiliki tugas masing-masing.
-
-2. **Mudah dipahami**
-   - Logika UI, penyimpanan data, dan komunikasi API dipisahkan dengan jelas.
-
-3. **Mudah dikembangkan**
-   - Jika nanti API diganti, perubahan cukup dilakukan di service atau repository.
-
-4. **Mudah diuji**
-   - Provider, repository, dan service bisa diuji secara terpisah.
-
-5. **Sesuai untuk project skala kecil sampai menengah**
-   - Arsitektur ini cukup sederhana untuk tugas kuliah, tetapi tetap baik secara struktur.
+Setelah penyesuaian Modul 6:
+- aplikasi tetap bisa login seperti sebelumnya
+- session tersimpan lokal
+- session dapat dipulihkan saat app dibuka lagi
+- logout menghapus session lokal
+- halaman utama menampilkan indikator sumber data session
 
 ---
 
 ## Kesimpulan
 
-Aplikasi ini berhasil menerapkan login menggunakan token dari API nyata dengan struktur **provider + repository + service**. Provider digunakan untuk mengatur state tampilan, repository sebagai penghubung data, dan service untuk komunikasi dengan API.
+Project ini sudah disesuaikan agar cocok dengan Modul 6 secara sederhana. Intinya, aplikasi login sebelumnya sekarang memiliki local storage, caching dasar untuk session, dan offline mode minimal melalui pemulihan session dari `shared_preferences`.
 
-Dengan pemisahan ini, aplikasi menjadi lebih terstruktur, mudah dijelaskan, dan sesuai dengan kebutuhan penilaian tugas yang menekankan fitur berjalan, arsitektur, UI, dan kualitas kode.
+Pendekatan ini sengaja dibuat sesederhana mungkin agar mudah dipahami, mudah dijelaskan, dan tetap sesuai dengan konteks tugas praktikum.

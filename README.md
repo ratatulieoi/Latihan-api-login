@@ -7,7 +7,9 @@ A Flutter login application for the assignment requirement **"membuat Form Login
 - Login form with real API request to `https://dummyjson.com/auth/login`
 - Uses **provider + repository + service** architecture
 - Parses and stores `accessToken` and `refreshToken`
+- Saves login session to local storage with `shared_preferences`
 - Restores login session when the app is reopened
+- Shows whether the current session comes from API or local storage
 - Handles loading state, validation, and login error messages
 - Logout flow to clear saved session
 - Clean Material 3 UI with responsive card layout
@@ -103,5 +105,6 @@ flutter build web --release
 
 ## Notes
 
+- This project already matches Modul 6 in a simple way: local storage, basic caching of login session, and minimal offline behavior.
 - Session data is stored locally using `shared_preferences` for assignment simplicity.
 - For production apps, token storage should use a more secure approach.

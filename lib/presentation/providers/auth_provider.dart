@@ -12,13 +12,24 @@ class AuthProvider extends ChangeNotifier {
   AuthSession? _session;
   bool _isLoading = false;
   bool _isInitialized = false;
+  bool _restoredFromLocalStorage = false;
   String? _errorMessage;
 
   AuthSession? get session => _session;
   bool get isLoading => _isLoading;
   bool get isInitialized => _isInitialized;
+  bool get restoredFromLocalStorage => _restoredFromLocalStorage;
   String? get errorMessage => _errorMessage;
   bool get isAuthenticated => _session != null;
+  String get sessionSourceLabel {
+    if (_restoredFromLocalStorage) {
+      return 'Local Storage';
+    }
+    if (_session != null) {
+      return 'API + cache lokal';
+    }
+    return '-';
+  }
 
   Future<void> init() async {
     if (_isInitialized) {
@@ -28,8 +39,10 @@ class AuthProvider extends ChangeNotifier {
     _setLoading(true);
     try {
       _session = await _authRepository.getPersistedSession();
+      _restoredFromLocalStorage = _session != null;
     } catch (_) {
       _session = null;
+      _restoredFromLocalStorage = false;
     } finally {
       _isInitialized = true;
       _setLoading(false);
@@ -58,6 +71,7 @@ class AuthProvider extends ChangeNotifier {
         password: trimmedPassword,
       );
       _session = result;
+      _restoredFromLocalStorage = false;
       return true;
     } on AuthException catch (error) {
       _session = null;
@@ -77,6 +91,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       await _authRepository.logout();
       _session = null;
+      _restoredFromLocalStorage = false;
       _errorMessage = null;
     } finally {
       _setLoading(false);
